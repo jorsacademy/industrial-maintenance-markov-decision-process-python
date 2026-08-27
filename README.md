@@ -71,13 +71,7 @@ The same finite discounted MDP is solved with three independent methods:
 2. policy iteration;
 3. exhaustive enumeration of every valid stationary deterministic policy.
 
-There are exactly:
-
-```text
-3 * 3 * 3 * 1 = 27
-```
-
-valid stationary deterministic policies in the default model.
+There are exactly `3 * 3 * 3 * 1 = 27` valid stationary deterministic policies in the default model.
 
 For a fixed policy, the code solves:
 
@@ -98,7 +92,7 @@ Critical  -> Replace
 Failed    -> Replace
 ```
 
-Default discounted values are approximately:
+Default discounted values:
 
 ```text
 Healthy      967.309
@@ -107,64 +101,42 @@ Critical    1519.257
 Failed      2209.257
 ```
 
-The Bellman residual is about:
+Bellman residual:
 
 ```text
-2.27e-13
+2.274e-13
 ```
 
 ## Monte Carlo cross-check
 
-Monte Carlo simulation is not used to optimize the policy. It is an independent stochastic check of the exact policy value.
+Monte Carlo simulation is not used to optimize the policy. It independently checks the exact policy value.
 
-A representative 3,000-trajectory/state smoke run gives values close to the exact solution, within sampling error.
+The GitHub Actions smoke configuration uses 3,000 trajectories from each initial state and a 220-period horizon.
 
 ## Markov-chain diagnostics
 
-Once a stationary policy is fixed, it induces a four-state Markov chain. The repository computes its stationary distribution and reports long-run average one-period cost and stationary failure probability.
+Once a stationary policy is fixed, it induces a four-state Markov chain. The repository computes its stationary distribution, long-run average one-period cost and stationary failure probability.
 
-For the default optimal policy, development diagnostics are approximately:
+Default optimal-policy diagnostics:
 
 ```text
-V(Healthy)            967.309
-stationary avg cost    30.077
-stationary P(Failed)    0.111%
+V(Healthy)             967.309
+stationary avg cost     30.077
+stationary P(Failed)     0.111%
 ```
 
-Two baseline policies are also evaluated.
-
-### Run-to-failure
+Baseline diagnostics:
 
 ```text
-Healthy   -> Operate
-Degraded  -> Operate
-Critical  -> Operate
-Failed    -> Replace
-```
+Run-to-failure
+V(Healthy)            3458.233
+stationary avg cost    116.387
+stationary P(Failed)     7.011%
 
-Development diagnostics:
-
-```text
-V(Healthy)           3458.233
-stationary avg cost   116.387
-stationary P(Failed)    7.011%
-```
-
-### Replace only when Critical
-
-```text
-Healthy   -> Operate
-Degraded  -> Operate
-Critical  -> Replace
-Failed    -> Replace
-```
-
-Development diagnostics:
-
-```text
-V(Healthy)           1976.287
-stationary avg cost    64.709
-stationary P(Failed)    1.360%
+Critical-state replacement
+V(Healthy)            1976.287
+stationary avg cost     64.709
+stationary P(Failed)     1.360%
 ```
 
 These are consequences of the declared model, not measured industrial failure rates.
@@ -178,21 +150,31 @@ Failed-state cost 400 -> Critical: MinorMaintenance
 Failed-state cost 850 -> Critical: Replace
 ```
 
-This shows why a maintenance policy depends on reliability and economic assumptions rather than on one universal threshold.
+This demonstrates that the maintenance policy depends on reliability and economic assumptions rather than on one universal threshold.
 
 ## Validation strategy
 
-Regression tests verify:
+Regression tests verify transition probabilities, action restrictions, a hand-checkable Bellman backup, agreement of all three exact methods, exhaustive enumeration of all 27 policies, dominance over two baselines, stationary-distribution invariance, Monte Carlo reproducibility, and failure-cost sensitivity.
 
-- transition rows are valid probabilities;
-- Failed-state action restrictions;
-- a hand-checkable one-step Bellman backup;
-- value iteration, policy iteration and exhaustive enumeration agree;
-- all 27 stationary policies are enumerated;
-- the optimal value dominates two intuitive baseline policies;
-- stationary Markov-chain probabilities are valid and invariant;
-- Monte Carlo runs are reproducible for a fixed seed;
-- failure-cost sensitivity changes the Critical-state action.
+## Validated GitHub Actions run
+
+The full CI workflow was executed with Python 3.12.14. The self-test, all 9 regression tests and the stochastic cross-check completed successfully.
+
+GitHub-runner stochastic check:
+
+```text
+Value-iteration iterations    947
+Policy-iteration iterations     2
+Policies exhaustively checked  27
+Bellman residual             2.274e-13
+
+Healthy   MC  966.462   exact  967.309
+Degraded  MC 1164.765   exact 1166.810
+Critical  MC 1521.349   exact 1519.257
+Failed    MC 2207.165   exact 2209.257
+```
+
+The Monte Carlo numbers are stochastic estimates; the dynamic-programming values are the exact numerical solution for the declared finite MDP.
 
 ## Run
 
@@ -212,7 +194,7 @@ Regression suite:
 python -m unittest discover -s tests -v
 ```
 
-Smaller CI-style stochastic run:
+CI-style stochastic run:
 
 ```bash
 python industrial_maintenance_mdp.py \
